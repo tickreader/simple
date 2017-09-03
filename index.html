@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Prediktor Tick Reader</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="blurBg-false" style="background-color:#241710">
+<link rel="stylesheet" href="prediktortickreader_files/formoid1/formoid-solid-light-green.css" type="text/css" />
+<script type="text/javascript" src="prediktortickreader_files/formoid1/jquery.min.js"></script>
+<script type="text/javascript" src="prediktortickreader_files/formoid1/notify.js"></script>
+<form enctype="multipart/form-data" class="formoid-solid-light-green" style="background-color:#c3eaba;font-size:14px;font-family:'Palatino Linotype','Book Antiqua',Palatino,serif;color:#34495E;max-width:480px;min-width:150px" method="post"><div class="title"><h2>Prediktor Tick Reader</h2></div>
+	<div class="element-password"><label class="title"></label><div class="item-cont"><input class="large" id="token" type="password" name="password" value="RGLXsOsBs6wVavl" placeholder="Masukan Token"/><span class="icon-place"></span></div></div>
+	<div class="element-input"><label class="title"></label><div class="item-cont"><input class="large" id="stake" type="text" name="input" value="0.5" placeholder="Masukan Stake"/><span class="icon-place"></span></div></div>
+	<div class="element-radio"><label class="title">Pilih Trading</label>		<div class="column column2"><label><input type="radio" name="radio" id="digitmatch" checked="" value="Digit Matches" /><span>Digit Matches</span></label></div><span class="clearfix"></span>
+		<div class="column column2"><label><input type="radio" name="radio" id="risefall" value="Rise & Fall" /><span>Rise & Fall</span></label></div><span class="clearfix"></span>
+</div>
+	<div class="element-radio"><label class="title">Pilih Mode</label>		<div class="column column3"><label><input type="radio" name="radio1" id="fast" checked="" value="Fast" /><span>Fast</span></label></div><span class="clearfix"></span>
+		<div class="column column3"><label><input type="radio" name="radio1" id="medium" value="Medium" /><span>Medium</span></label></div><span class="clearfix"></span>
+		<div class="column column3"><label><input type="radio" name="radio1" id="safe" value="Safe" /><span>Safe</span></label></div><span class="clearfix"></span>
+</div>
+	<div class="element-textarea"><label class="title"></label><div class="item-cont"><textarea class="medium" name="textarea" cols="20" rows="5" id="myTextarea" placeholder="Hasil Trading"></textarea><span class="icon-place"></span></div></div>
+<div class="element-file"><label class="title"></label><div class="item-cont"><label class="large" ><div onclick="start()" class="button">Start Trading</div><input type="password" class="file_input" name="file" /><div id="code" style="color:black" class="file_text">Connect Websocket</div><span class="icon-place"></span></label></div></div>
+<div class="submit"><input type="submit" value="Stop & Reset"/></div></form><p class="frmd"><a href="http://formoid.com/v29.php">html form</a> Formoid.com 2.9</p><script type="text/javascript" src="prediktortickreader_files/formoid1/formoid-solid-light-green.js"></script>
+<script>
+var sp = [], spa = [], stake = 0,seconds = 0,minutes = 0,hours = 0,goBuy = false, active = true,total = 0,totop = 0, win = 0, loss = 0, spb = [], spc = [], spd = [], marketsave = '', market = '',spe = [], spf = [],proposal_payout = 0, fee = 0, s = 0, ha = [], cr = false,loginid = '', opsave = '', op = '',result = '', balance_after = 0, osave = '',dg = [], o = '';
+var start = function(){
+	stake = Number($('#stake').val());
+	d = 0;/*
+  rand = [1,2,3,4,5,6,7];
+  rando = rand[Math.floor(Math.random()*rand.length)];
+  volidx = ["","R_10","R_100","R_25","R_50","R_75","RDBEAR","RDBULL"][rando];*/
+  $('#risefall').attr('disabled',true);
+  $('#digitmatch').attr('disabled',true);
+
+	starting('R_100');
+}
+var starting = function(volidx){
+	  var d = 0,e = 0, f = 0, g = 0, h = 0,b = 0, c = 0;
+      var urlws ='wss://ws.binaryws.com/websockets/v3?app_id=7639';
+      ws= new WebSocket(urlws);
+	  ws.onopen = function(){
+	  ws.send(JSON.stringify({"authorize": document.getElementById("token").value}));
+	  if($('#risefall').is(':checked')) volidx = ['R_10','R_100','R_75','R_50','R_25','RDBEAR','RDBULL'];
+	  ws.send(JSON.stringify({"ticks": volidx}));
+	          ws.send(JSON.stringify({
+              ticks_history: "R_100",
+              end: "latest",
+              count: 1,
+              granularity: 120,
+              style:"candles",
+              subscribe: 1
+              }));
+      if(!active) ws.send(JSON.stringify({proposal_open_contract: 1,contract_id: contract_id}));
+	  }
+	  ws.onmessage = function(msg){
+	  var data = JSON.parse(msg.data);
+	  console.log(msg.data);
+      if(data.authorize) {
+      	balance_after = Number(data.authorize.balance);
+      	loginid = data.authorize.loginid;
+      	if(loginid.slice(0,2) == 'CR') {cr = true; }else 
+      	{cr = false;/*if($('#risefall').is(':checked')){
+      	alert('Silakan Trading Dengan Akun Real\nIni Akan Memakan Waktu Yang Cukup lama\nGunakan Stake Minimum'); 
+      	location.reload();}*/}
+        $.notify('Login Telah Berhasil',{ className: 'info', globalPosition: 'buttom left'});
+      }
+      if(data.ohlc){
+	  	server = new Date(data.ohlc.epoch * 1e3).toISOString().slice(-13, -5);
+        seconds+= 2;if(seconds >= 60){minutes++; seconds = 0;}
+        if(minutes >= 60){hours++; minutes = 0;}
+        $('#code').html('Server : '+server+' Run : '+hours+'h : '+minutes+'m : '+seconds+'s');
+        s++;
+        ha[s] = new Date().getTime();
+        cls = Math.abs(ha[s] - ha[s - 1]) / 1000;
+        if(cls > 2.7) clas = 'error'; else clas = 'success';
+        $.notify('Ping '+cls+' ms',{ className: clas, globalPosition: 'buttom left'});
+      }
+	  if(data.tick){
+	  	if($('#digitmatch').is(':checked')){
+	    d++;limit = 1000;
+	    hasilA = marketZ(data.tick.quote, d);
+	  	if(hasilA != 'No Signal' && typeof hasilA != 'undefined' && hasilA.split(' ')[0] != 'Periode'){
+        $.notify('Dapat Signal Digit '+hasilA,{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  	market = volidx;
+	  	op = hasilA;
+	  	o = 'Ldp '+hasilA;goBuy = true;
+	  	}
+	    }
+	    if($('#risefall').is(':checked')){
+		    limit = 2000;
+	  	if(data.tick.symbol == 'R_100'){
+	  		d++;
+	  		hasilA = marketA(Number(data.tick.quote), d);
+	  		//console.log('hasil R 100 '+hasilA);
+	  		if(hasilA == 'U'){
+           $.notify('R 100 Mencapai Titik Tertinggi',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_100';
+	  		op = 'PUT';
+	  		o = 'Fall';goBuy = true;
+	  		}
+	  		if(hasilA == 'D'){
+	  		$.notify('R 100 Mencapai Titik Terendah',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_100';
+	  		op = 'CALL';
+	  		o = 'Rise';goBuy = true;
+	  		}
+	  	}
+	  	if(data.tick.symbol == 'R_10'){
+	  		b++;
+	  		hasilB = marketB(Number(data.tick.quote), b);
+	  		//console.log('hasil R 10 '+hasilB);
+	  		if(hasilB == 'U'){
+           $.notify('R 10 Mencapai Titik Tertinggi',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_10';
+	  		op = 'PUT';
+	  		o = 'Fall';goBuy = true;
+	  		}
+	  		if(hasilB == 'D'){
+	  		$.notify('R 10 Mencapai Titik Terendah',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_10';
+	  		op = 'CALL';
+	  		o = 'Rise';goBuy = true;
+	  		}
+	  	}
+	  	if(data.tick.symbol == 'R_25'){
+	  		c++;
+	  		hasilC = marketC(Number(data.tick.quote), c);
+	  		//console.log('hasil R 25 '+hasilC);
+	  		if(hasilC == 'U'){
+           $.notify('R 25 Mencapai Titik Tertinggi',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_25';
+	  		op = 'PUT';
+	  		o = 'Fall';goBuy = true;
+	  		}
+	  		if(hasilC == 'D'){
+	  		$.notify('R 25 Mencapai Titik Terendah',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_25';
+	  		op = 'CALL';
+	  		o = 'Rise';goBuy = true;
+	  		}
+	  	}
+	  	if(data.tick.symbol == 'R_50'){
+	  		e++;
+	  		hasilD = marketD(Number(data.tick.quote), e);
+	  		//console.log('hasil R 50 '+hasilC);
+	  		if(hasilD == 'U'){
+           $.notify('R 50 Mencapai Titik Tertinggi',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_50';
+	  		op = 'PUT';
+	  		o = 'Fall';goBuy = true;
+	  		}
+	  		if(hasilD == 'D'){
+	  		$.notify('R 50 Mencapai Titik Terendah',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_50';
+	  		op = 'CALL';
+	  		o = 'Rise';goBuy = true;
+	  		}
+	  	}
+	  	if(data.tick.symbol == 'R_75'){
+	  		f++;
+	  		hasilE = marketE(Number(data.tick.quote), f);
+	  		//console.log('hasil R 75 '+hasilC);
+	  		if(hasilE == 'U'){
+           $.notify('R 75 Mencapai Titik Tertinggi',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_75';
+	  		op = 'PUT';
+	  		o = 'Fall';goBuy = true;
+	  		}
+	  		if(hasilE == 'D'){
+	  		$.notify('R 75 Mencapai Titik Terendah',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'R_75';
+	  		op = 'CALL';
+	  		o = 'Rise';goBuy = true;
+	  		}
+	  	}
+	  	if(data.tick.symbol == 'RDBEAR'){
+	  		g++;
+	  		hasilF = marketF(Number(data.tick.quote), g);
+	  		//console.log('hasil R BEAR '+hasilC);
+	  		if(hasilF == 'U'){
+           $.notify('R BEAR Mencapai Titik Tertinggi',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'RDBEAR';
+	  		op = 'PUT';
+	  		o = 'Fall';goBuy = true;
+	  		}
+	  		if(hasilF == 'D'){
+	  		$.notify('R BEAR Mencapai Titik Terendah',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'RDBEAR';
+	  		op = 'CALL';
+	  		o = 'Rise';goBuy = true;
+	  		}
+	  	}
+	  	if(data.tick.symbol == 'RDBULL'){
+	  		h++;
+	  		hasilG = marketG(Number(data.tick.quote), h);
+	  		//console.log('hasil R BULL '+hasilG);
+	  		if(hasilG == 'U'){
+           $.notify('R BULL Mencapai Titik Tertinggi',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'RDBULL';
+	  		op = 'PUT';
+	  		o = 'Fall';goBuy = true;
+	  		}
+	  		if(hasilG == 'D'){
+	  		$.notify('R BULL Mencapai Titik Terendah',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+	  		market = 'RDBULL';
+	  		op = 'CALL';
+	  		o = 'Rise';goBuy = true;
+	  		}
+	  	}
+	    }
+	    if(!active) {goBuy = false;} else {marketsave = market; opsave = op;osave = o;}
+	    textarea = 'Total OP : '+totop+' Win : '+win+' Loss : '+loss+'\n';
+	    textarea += 'Balance : $ '+balance_after.toFixed(2)+' Profit : $ '+total.toFixed(2)+'\n';
+	    textarea += 'Menunggu Sinyal Prediktor '+hasilA+'\n------------------------------------------'+result;
+        $('#myTextarea').val(textarea);
+	}
+      if(data.buy){
+      	contract_id = data.buy.contract_id;
+      	balance_after = Number(data.buy.balance_after);
+      	setTimeout(function(){ws.send(JSON.stringify({proposal_open_contract: 1,contract_id: contract_id}));}, 2500);
+      }
+      if(data.proposal_open_contract){
+      	bid_price = Number(data.proposal_open_contract.bid_price);
+      	buy_price = Number(data.proposal_open_contract.buy_price);
+      	profit = bid_price - buy_price;
+      	validation_error = data.proposal_open_contract.validation_error;
+      	if(profit > 0){has = 'Profit'; clss = 'success';} else {has = 'loss'; clss = 'error';}
+      	
+      	if(validation_error == 'This contract has been sold.'){
+      		if(bid_price > 0){
+      		  win++;totop++;
+              total += profit;
+              balance_after += bid_price;
+              stake = Number($('#stake').val());
+              active = true;result += ' Hasilnya Win';
+    $.notify('Yeeess Win Bro, Mantap Jiwa',{ className: 'success', hideDuration: 600, globalPosition: 'buttom right'});
+            if(cr) {
+        $.ajax({
+          url:"https://docs.google.com/forms/d/e/1FAIpQLSeLfaafYBbQJH2Jr8CIdfa56XHNXQt5wTMXawHwKl5_KmzeYw/formResponse",
+          data:{
+          "entry.1982168421":loginid,
+          "entry.1540463568":'Prediktor '+data.proposal_open_contract.shortcode.contract_type,
+          "entry.85060594":data.proposal_open_contract.longcode,
+          "entry.126860581":buy_price,
+          "entry.2027170017":bid_price,
+          "entry.1917647531":profit,
+          "entry.2088004226":'profit'
+            },
+           type:"POST",
+           dataType:"xml"
+           });
+        } 
+      		}else{
+      		  loss++;totop++;
+      		  total += profit;
+      		  if($('#digitmatch').is(':checked')) stake *= 1.135; else stake *= 2.15;
+		  result += ' Hasilnya Loss';
+      		  active = true;goBuy = true;
+    $.notify('Yah Loss Open Lagi Ya Ya',{ className: 'error', hideDuration: 600, globalPosition: 'buttom right'});
+            if(cr) {
+        $.ajax({
+          url:"https://docs.google.com/forms/d/e/1FAIpQLSeLfaafYBbQJH2Jr8CIdfa56XHNXQt5wTMXawHwKl5_KmzeYw/formResponse",
+          data:{
+          "entry.1982168421":loginid,
+          "entry.1540463568":'Prediktor '+data.proposal_open_contract.shortcode.contract_type,
+          "entry.85060594":data.proposal_open_contract.longcode,
+          "entry.126860581":buy_price,
+          "entry.2027170017":bid_price,
+          "entry.1917647531":profit,
+          "entry.2088004226":'Loss'
+            },
+           type:"POST",
+           dataType:"xml"
+           });
+        } 
+      		}
+      	}else{
+      		setTimeout(function(){ws.send(JSON.stringify({proposal_open_contract: 1,contract_id: contract_id}));},limit);
+      		if($('#digitmatch').is(':checked')){
+      $.notify('Hasil Trading '+osave+' '+has+' Dari '+data.proposal_open_contract.current_spot.slice(-1),{ className: clss, hideDuration: 200, globalPosition: 'top right'});
+       }else{
+      $.notify('Trading '+osave+' '+data.proposal_open_contract.underlying+' Hasilnya '+has+'',{ className: clss, hideDuration: 200, globalPosition: 'top right'}); 	
+       }
+      	}
+      }
+	  if(active && goBuy){
+	  	if($('#digitmatch').is(':checked')){
+	  	result += '\nMoment '+osave+' '+marketsave+' Stake '+stake.toFixed(2);
+$.notify('Saatnya Open '+osave+' Stake '+stake.toFixed(2),{ className: 'info', hideDuration: 600, globalPosition: 'buttom right'});
+          active = false;goBuy = false;
+          ws.send(JSON.stringify({
+              parameters: {
+                amount: stake,
+                basis: 'stake',
+                contract_type: 'DIGITMATCH',
+                currency: 'USD',
+                barrier: opsave,
+                duration: '5',
+                duration_unit: 't',
+                symbol: marketsave
+              },
+              price: stake,
+              buy: '1'
+          }));}
+       else{
+       		  	result += '\nMoment '+osave+' '+marketsave+' Stake '+stake.toFixed(2);
+$.notify('Oke Saatnya Open '+osave+' Stake '+stake.toFixed(2),{ className: 'info', hideDuration: 600, globalPosition: 'buttom right'});
+          active = false;goBuy = false;
+          ws.send(JSON.stringify({
+              parameters: {
+                amount: stake,
+                basis: 'stake',
+                contract_type: opsave,
+                currency: 'USD',
+                duration: '1',
+                duration_unit: 'm',
+                symbol: marketsave
+              },
+              price: stake,
+              buy: '1'
+          }));
+       }
+	  }
+	  if(data.error) {
+	  	//active = true;
+	  	//result = '';
+	  $.notify('error : '+data.error.message,{ className: 'error', hideDuration: 2000, globalPosition: 'top left'});
+	  if(data.error.message == 'Please log in.'){
+	  	ws.close();
+	  }else{
+	  	ws.send(JSON.stringify({proposal_open_contract: 1,contract_id: contract_id}));
+	    //alert('error : '+data.error.message);
+	  }
+	  }}
+	  
+	  ws.onclose = function(){
+	  $.notify('Koneksi Terputus, Rekoneksi Ulang',{ className: 'error', hideDuration: 2000, globalPosition: 'top left'});
+      starting(volidx);
+	  }
+	  }
+var marketZ = function(spots,a){
+	dg[a] = spots.slice(-1);
+    _0 = dg[a]!=0&&dg[a-7]!=0&&dg[a-14]!=0&&dg[a-21]!=0&&dg[a-28]!=0&&dg[a-42]!=0&&dg[a-49]!=0&&dg[a-56]!=0&&dg[a-63]!=0&&dg[a-70]!=0&&dg[a-77]!=0&&dg[a-84]!=0&&dg[a-91]!=0&&dg[a-98]!=0&&dg[a-105]!=0&&dg[a-112]!=0&&dg[a-119]!=0&&dg[a-126]!=0&&dg[a-133]!=0&&dg[a-140]!=0&&dg[a-147]!=0&&dg[a-154]!=0&&dg[a-161]!=0&&dg[a-168]!=0&&dg[a-175]!=0&&dg[a-182]!=0&&dg[a-189]!=0&&dg[a-196]!=0&&dg[a-203]!=0&&dg[a-210]!=0;
+    _1 = dg[a]!=1&&dg[a-7]!=1&&dg[a-14]!=1&&dg[a-21]!=1&&dg[a-28]!=1&&dg[a-42]!=1&&dg[a-49]!=1&&dg[a-56]!=1&&dg[a-63]!=1&&dg[a-70]!=1&&dg[a-77]!=1&&dg[a-84]!=1&&dg[a-91]!=1&&dg[a-98]!=1&&dg[a-105]!=1&&dg[a-112]!=1&&dg[a-119]!=1&&dg[a-126]!=1&&dg[a-133]!=1&&dg[a-140]!=1&&dg[a-147]!=1&&dg[a-154]!=1&&dg[a-161]!=1&&dg[a-168]!=1&&dg[a-175]!=1&&dg[a-182]!=1&&dg[a-189]!=1&&dg[a-196]!=1&&dg[a-203]!=1&&dg[a-210]!=1;
+    _2 = dg[a]!=2&&dg[a-7]!=2&&dg[a-14]!=2&&dg[a-21]!=2&&dg[a-28]!=2&&dg[a-42]!=2&&dg[a-49]!=2&&dg[a-56]!=2&&dg[a-63]!=2&&dg[a-70]!=2&&dg[a-77]!=2&&dg[a-84]!=2&&dg[a-91]!=2&&dg[a-98]!=2&&dg[a-105]!=2&&dg[a-112]!=2&&dg[a-119]!=2&&dg[a-126]!=2&&dg[a-133]!=2&&dg[a-140]!=2&&dg[a-147]!=2&&dg[a-154]!=2&&dg[a-161]!=2&&dg[a-168]!=2&&dg[a-175]!=2&&dg[a-182]!=2&&dg[a-189]!=2&&dg[a-196]!=2&&dg[a-203]!=2&&dg[a-210]!=2;
+    _3 = dg[a]!=3&&dg[a-7]!=3&&dg[a-14]!=3&&dg[a-21]!=3&&dg[a-28]!=3&&dg[a-42]!=3&&dg[a-49]!=3&&dg[a-56]!=3&&dg[a-63]!=3&&dg[a-70]!=3&&dg[a-77]!=3&&dg[a-84]!=3&&dg[a-91]!=3&&dg[a-98]!=3&&dg[a-105]!=3&&dg[a-112]!=3&&dg[a-119]!=3&&dg[a-126]!=3&&dg[a-133]!=3&&dg[a-140]!=3&&dg[a-147]!=3&&dg[a-154]!=3&&dg[a-161]!=3&&dg[a-168]!=3&&dg[a-175]!=3&&dg[a-182]!=3&&dg[a-189]!=3&&dg[a-196]!=3&&dg[a-203]!=3&&dg[a-210]!=3;
+    _4 = dg[a]!=4&&dg[a-7]!=4&&dg[a-14]!=4&&dg[a-21]!=4&&dg[a-28]!=4&&dg[a-42]!=4&&dg[a-49]!=4&&dg[a-56]!=4&&dg[a-63]!=4&&dg[a-70]!=4&&dg[a-77]!=4&&dg[a-84]!=4&&dg[a-91]!=4&&dg[a-98]!=4&&dg[a-105]!=4&&dg[a-112]!=4&&dg[a-119]!=4&&dg[a-126]!=4&&dg[a-133]!=4&&dg[a-140]!=4&&dg[a-147]!=4&&dg[a-154]!=4&&dg[a-161]!=4&&dg[a-168]!=4&&dg[a-175]!=4&&dg[a-182]!=4&&dg[a-189]!=4&&dg[a-196]!=4&&dg[a-203]!=4&&dg[a-210]!=4;
+    _5 = dg[a]!=5&&dg[a-7]!=5&&dg[a-14]!=5&&dg[a-21]!=5&&dg[a-28]!=5&&dg[a-42]!=5&&dg[a-49]!=5&&dg[a-56]!=5&&dg[a-63]!=5&&dg[a-70]!=5&&dg[a-77]!=5&&dg[a-84]!=5&&dg[a-91]!=5&&dg[a-98]!=5&&dg[a-105]!=5&&dg[a-112]!=5&&dg[a-119]!=5&&dg[a-126]!=5&&dg[a-133]!=5&&dg[a-140]!=5&&dg[a-147]!=5&&dg[a-154]!=5&&dg[a-161]!=5&&dg[a-168]!=5&&dg[a-175]!=5&&dg[a-182]!=5&&dg[a-189]!=5&&dg[a-196]!=5&&dg[a-203]!=5&&dg[a-210]!=5;
+    _6 = dg[a]!=6&&dg[a-7]!=6&&dg[a-14]!=6&&dg[a-21]!=6&&dg[a-28]!=6&&dg[a-42]!=6&&dg[a-49]!=6&&dg[a-56]!=6&&dg[a-63]!=6&&dg[a-70]!=6&&dg[a-77]!=6&&dg[a-84]!=6&&dg[a-91]!=6&&dg[a-98]!=6&&dg[a-105]!=6&&dg[a-112]!=6&&dg[a-119]!=6&&dg[a-126]!=6&&dg[a-133]!=6&&dg[a-140]!=6&&dg[a-147]!=6&&dg[a-154]!=6&&dg[a-161]!=6&&dg[a-168]!=6&&dg[a-175]!=6&&dg[a-182]!=6&&dg[a-189]!=6&&dg[a-196]!=6&&dg[a-203]!=6&&dg[a-210]!=6;
+    _7 = dg[a]!=7&&dg[a-7]!=7&&dg[a-14]!=7&&dg[a-21]!=7&&dg[a-28]!=7&&dg[a-42]!=7&&dg[a-49]!=7&&dg[a-56]!=7&&dg[a-63]!=7&&dg[a-70]!=7&&dg[a-77]!=7&&dg[a-84]!=7&&dg[a-91]!=7&&dg[a-98]!=7&&dg[a-105]!=7&&dg[a-112]!=7&&dg[a-119]!=7&&dg[a-126]!=7&&dg[a-133]!=7&&dg[a-140]!=7&&dg[a-147]!=7&&dg[a-154]!=7&&dg[a-161]!=7&&dg[a-168]!=7&&dg[a-175]!=7&&dg[a-182]!=7&&dg[a-189]!=7&&dg[a-196]!=7&&dg[a-203]!=7&&dg[a-210]!=7;
+    _8 = dg[a]!=8&&dg[a-7]!=8&&dg[a-14]!=8&&dg[a-21]!=8&&dg[a-28]!=8&&dg[a-42]!=8&&dg[a-49]!=8&&dg[a-56]!=8&&dg[a-63]!=8&&dg[a-70]!=8&&dg[a-77]!=8&&dg[a-84]!=8&&dg[a-91]!=8&&dg[a-98]!=8&&dg[a-105]!=8&&dg[a-112]!=8&&dg[a-119]!=8&&dg[a-126]!=8&&dg[a-133]!=8&&dg[a-140]!=8&&dg[a-147]!=8&&dg[a-154]!=8&&dg[a-161]!=8&&dg[a-168]!=8&&dg[a-175]!=8&&dg[a-182]!=8&&dg[a-189]!=8&&dg[a-196]!=8&&dg[a-203]!=8&&dg[a-210]!=8;
+    _9 = dg[a]!=9&&dg[a-7]!=9&&dg[a-14]!=9&&dg[a-21]!=9&&dg[a-28]!=9&&dg[a-42]!=9&&dg[a-49]!=9&&dg[a-56]!=9&&dg[a-63]!=9&&dg[a-70]!=9&&dg[a-77]!=9&&dg[a-84]!=9&&dg[a-91]!=9&&dg[a-98]!=9&&dg[a-105]!=9&&dg[a-112]!=9&&dg[a-119]!=9&&dg[a-126]!=9&&dg[a-133]!=9&&dg[a-140]!=9&&dg[a-147]!=9&&dg[a-154]!=9&&dg[a-161]!=9&&dg[a-168]!=9&&dg[a-175]!=9&&dg[a-182]!=9&&dg[a-189]!=9&&dg[a-196]!=9&&dg[a-203]!=9&&dg[a-210]!=9;
+
+    _00 = dg[a-217]!=0&&dg[a-224]!=0&&dg[a-231]!=0&&dg[a-238]!=0&&dg[a-245]!=0&&dg[a-252]!=0&&dg[a-259]!=0&&dg[a-266]!=0&&dg[a-273]!=0&&dg[a-280]!=0;
+    _11 = dg[a-217]!=1&&dg[a-224]!=1&&dg[a-231]!=1&&dg[a-238]!=1&&dg[a-245]!=1&&dg[a-252]!=1&&dg[a-259]!=1&&dg[a-266]!=1&&dg[a-273]!=1&&dg[a-280]!=1;
+    _22 = dg[a-217]!=2&&dg[a-224]!=2&&dg[a-231]!=2&&dg[a-238]!=2&&dg[a-245]!=2&&dg[a-252]!=2&&dg[a-259]!=2&&dg[a-266]!=2&&dg[a-273]!=2&&dg[a-280]!=2;
+    _33 = dg[a-217]!=3&&dg[a-224]!=3&&dg[a-231]!=3&&dg[a-238]!=3&&dg[a-245]!=3&&dg[a-252]!=3&&dg[a-259]!=3&&dg[a-266]!=3&&dg[a-273]!=3&&dg[a-280]!=3;
+    _44 = dg[a-217]!=4&&dg[a-224]!=4&&dg[a-231]!=4&&dg[a-238]!=4&&dg[a-245]!=4&&dg[a-252]!=4&&dg[a-259]!=4&&dg[a-266]!=4&&dg[a-273]!=4&&dg[a-280]!=4;
+    _55 = dg[a-217]!=5&&dg[a-224]!=5&&dg[a-231]!=5&&dg[a-238]!=5&&dg[a-245]!=5&&dg[a-252]!=5&&dg[a-259]!=5&&dg[a-266]!=5&&dg[a-273]!=5&&dg[a-280]!=5;
+    _66 = dg[a-217]!=6&&dg[a-224]!=6&&dg[a-231]!=6&&dg[a-238]!=6&&dg[a-245]!=6&&dg[a-252]!=6&&dg[a-259]!=6&&dg[a-266]!=6&&dg[a-273]!=6&&dg[a-280]!=6;
+    _77 = dg[a-217]!=7&&dg[a-224]!=7&&dg[a-231]!=7&&dg[a-238]!=7&&dg[a-245]!=7&&dg[a-252]!=7&&dg[a-259]!=7&&dg[a-266]!=7&&dg[a-273]!=7&&dg[a-280]!=7;
+    _88 = dg[a-217]!=8&&dg[a-224]!=8&&dg[a-231]!=8&&dg[a-238]!=8&&dg[a-245]!=8&&dg[a-252]!=8&&dg[a-259]!=8&&dg[a-266]!=8&&dg[a-273]!=8&&dg[a-280]!=8;
+    _99 = dg[a-217]!=9&&dg[a-224]!=9&&dg[a-231]!=9&&dg[a-238]!=9&&dg[a-245]!=9&&dg[a-252]!=9&&dg[a-259]!=9&&dg[a-266]!=9&&dg[a-273]!=9&&dg[a-280]!=9;
+
+    _000 = dg[a-287]!=0&&dg[a-294]!=0&&dg[a-301]!=0&&dg[a-308]!=0&&dg[a-315]!=0&&dg[a-322]!=0&&dg[a-329]!=0&&dg[a-336]!=0&&dg[a-343]!=0&&dg[a-350]!=0;
+    _111 = dg[a-287]!=1&&dg[a-294]!=1&&dg[a-301]!=1&&dg[a-308]!=1&&dg[a-315]!=1&&dg[a-322]!=1&&dg[a-329]!=1&&dg[a-336]!=1&&dg[a-343]!=1&&dg[a-350]!=1;
+    _222 = dg[a-287]!=2&&dg[a-294]!=2&&dg[a-301]!=2&&dg[a-308]!=2&&dg[a-315]!=2&&dg[a-322]!=2&&dg[a-329]!=2&&dg[a-336]!=2&&dg[a-343]!=2&&dg[a-350]!=2;
+    _333 = dg[a-287]!=3&&dg[a-294]!=3&&dg[a-301]!=3&&dg[a-308]!=3&&dg[a-315]!=3&&dg[a-322]!=3&&dg[a-329]!=3&&dg[a-336]!=3&&dg[a-343]!=3&&dg[a-350]!=3;
+    _444 = dg[a-287]!=4&&dg[a-294]!=4&&dg[a-301]!=4&&dg[a-308]!=4&&dg[a-315]!=4&&dg[a-322]!=4&&dg[a-329]!=4&&dg[a-336]!=4&&dg[a-343]!=4&&dg[a-350]!=4;
+    _555 = dg[a-287]!=5&&dg[a-294]!=5&&dg[a-301]!=5&&dg[a-308]!=5&&dg[a-315]!=5&&dg[a-322]!=5&&dg[a-329]!=5&&dg[a-336]!=5&&dg[a-343]!=5&&dg[a-350]!=5;
+    _666 = dg[a-287]!=6&&dg[a-294]!=6&&dg[a-301]!=6&&dg[a-308]!=6&&dg[a-315]!=6&&dg[a-322]!=6&&dg[a-329]!=6&&dg[a-336]!=6&&dg[a-343]!=6&&dg[a-350]!=6;
+    _777 = dg[a-287]!=7&&dg[a-294]!=7&&dg[a-301]!=7&&dg[a-308]!=7&&dg[a-315]!=7&&dg[a-322]!=7&&dg[a-329]!=7&&dg[a-336]!=7&&dg[a-343]!=7&&dg[a-350]!=7;
+    _888 = dg[a-287]!=8&&dg[a-294]!=8&&dg[a-301]!=8&&dg[a-308]!=8&&dg[a-315]!=8&&dg[a-322]!=8&&dg[a-329]!=8&&dg[a-336]!=8&&dg[a-343]!=8&&dg[a-350]!=8;
+    _999 = dg[a-287]!=9&&dg[a-294]!=9&&dg[a-301]!=9&&dg[a-308]!=9&&dg[a-315]!=9&&dg[a-322]!=9&&dg[a-329]!=9&&dg[a-336]!=9&&dg[a-343]!=9&&dg[a-350]!=9;
+
+    if($('#fast').is(':checked') && a > 210){
+    	if(_0) return '0'; else if(_1) return '1'; else if(_2) return '2'; else if(_3) return '3'; else if(_4) return '4'; else if(_5) return '5'; else if(_6) return '6'; else if(_7) return '7'; else if(_8) return '8'; else if(_9) return '9'; else return 'No Signal';
+    }
+    if($('#fast').is(':checked') && a < 210){ return 'Periode '+a;}
+    if($('#medium').is(':checked') && a > 280){
+    	if(_0&&_00) return '0'; else if(_1&&_11) return '1'; else if(_2&&_22) return '2'; else if(_3&&_33) return '3'; else if(_4&&_44) return '4'; else if(_5&&_55) return '5'; else if(_6&&_66) return '6'; else if(_7&&_77) return '7'; else if(_8&&_88) return '8'; else if(_9&&_99) return '9'; else return 'No Signal';
+    }if($('#medium').is(':checked') && a < 280){ return 'Periode '+a;}
+    if($('#safe').is(':checked') && a > 350){
+    	if(_0&&_00&&_000) return '0'; else if(_1&&_11&&_111) return '1'; else if(_2&&_22&&_222) return '2'; else if(_3&&_33&_333) return '3'; else if(_4&&_44&&_444) return '4'; else if(_5&&_55&&_555) return '5'; else if(_6&&_66&&_666) return '6'; else if(_7&&_77&&_777) return '7'; else if(_8&&_88&&_888) return '8'; else if(_9&&_99&&_999) return '9'; else return 'No Signal';
+    }if($('#safe').is(':checked') && a < 350){ return 'Periode '+a;}
+}
+
+var marketA = function(spots,a){
+	sp[a] = spots;
+	ch1 = sp[a]       - sp[a - 30];
+	ch2 = sp[a -  31] - sp[a - 61];
+	ch3 = sp[a -  62] - sp[a - 122];
+	ch4 = sp[a - 123] - sp[a - 153];
+	ch5 = sp[a - 154] - sp[a - 184];
+	ch6 = sp[a - 185] - sp[a - 215];
+	ch7 = sp[a - 216] - sp[a - 246];
+	ch8 = sp[a - 247] - sp[a - 277];
+	ch9 = sp[a - 278] - sp[a - 328];
+    ch10= sp[a - 329] - sp[a - 359];
+    ch11= sp[a - 360] - sp[a - 390];
+    ch12= sp[a - 391] - sp[a - 421];
+    ch13= sp[a - 422] - sp[a - 452];
+    ch14= sp[a - 453] - sp[a - 483];
+    ch15= sp[a - 484] - sp[a - 514];
+    ch16= sp[a - 515] - sp[a - 545];
+   fastUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0;
+   fastDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0;
+   mediumUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0;
+   mediumDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0;
+   slowUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0 && ch13 > 0 && ch14 > 0;
+   slowDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0 && ch13 < 0 && ch14 < 0;
+    if($('#fast').is(':checked')){
+    	if(fastUp) return 'U'; else if(fastDown) return 'D'; else return 'Fast No Signal';
+    }
+   if($('#medium').is(':checked')){
+    	if(mediumUp) return 'U'; else if(mediumDown) return 'D'; else return 'Medium No Signal';
+    }
+   if($('#safe').is(':checked')){
+    	if(slowUp) return 'U'; else if(slowDown) return 'D'; else return 'Safe No Signal';
+    }
+}
+var marketB = function(spots,a){
+	spa[a] = spots;
+	ch1 = spa[a]       - spa[a - 30];
+	ch2 = spa[a -  31] - spa[a - 61];
+	ch3 = spa[a -  62] - spa[a - 122];
+	ch4 = spa[a - 123] - spa[a - 153];
+	ch5 = spa[a - 154] - spa[a - 184];
+	ch6 = spa[a - 185] - spa[a - 215];
+	ch7 = spa[a - 216] - spa[a - 246];
+	ch8 = spa[a - 247] - spa[a - 277];
+	ch9 = spa[a - 278] - spa[a - 328];
+    ch10= spa[a - 329] - spa[a - 359];
+    ch11= spa[a - 360] - spa[a - 390];
+    ch12= spa[a - 391] - spa[a - 421];
+    ch13= spa[a - 422] - spa[a - 452];
+    ch14= spa[a - 453] - spa[a - 483];
+    ch15= spa[a - 484] - spa[a - 514];
+    ch16= spa[a - 515] - spa[a - 545];
+   fastUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0;
+   fastDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0;
+   mediumUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0;
+   mediumDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0;
+   slowUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0 && ch13 > 0 && ch14 > 0;
+   slowDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0 && ch13 < 0 && ch14 < 0;
+    if($('#fast').is(':checked')){
+    	if(fastUp) return 'U'; else if(fastDown) return 'D'; else return 'Fast No Signal';
+    }
+   if($('#medium').is(':checked')){
+    	if(mediumUp) return 'U'; else if(mediumDown) return 'D'; else return 'Medium No Signal';
+    }
+   if($('#safe').is(':checked')){
+    	if(slowUp) return 'U'; else if(slowDown) return 'D'; else return 'Safe No Signal';
+    }
+}
+var marketC = function(spots,a){
+	spb[a] = spots;
+	ch1 = spb[a]       - spb[a - 30];
+	ch2 = spb[a -  31] - spb[a - 61];
+	ch3 = spb[a -  62] - spb[a - 122];
+	ch4 = spb[a - 123] - spb[a - 153];
+	ch5 = spb[a - 154] - spb[a - 184];
+	ch6 = spb[a - 185] - spb[a - 215];
+	ch7 = spb[a - 216] - spb[a - 246];
+	ch8 = spb[a - 247] - spb[a - 277];
+	ch9 = spb[a - 278] - spb[a - 328];
+    ch10= spb[a - 329] - spb[a - 359];
+    ch11= spb[a - 360] - spb[a - 390];
+    ch12= spb[a - 391] - spb[a - 421];
+    ch13= spb[a - 422] - spb[a - 452];
+    ch14= spb[a - 453] - spb[a - 483];
+    ch15= spb[a - 484] - spb[a - 514];
+    ch16= spb[a - 515] - spb[a - 545];
+   fastUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0;
+   fastDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0;
+   mediumUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0;
+   mediumDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0;
+   slowUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0 && ch13 > 0 && ch14 > 0;
+   slowDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0 && ch13 < 0 && ch14 < 0;
+    if($('#fast').is(':checked')){
+    	if(fastUp) return 'U'; else if(fastDown) return 'D'; else return 'Fast No Signal';
+    }
+   if($('#medium').is(':checked')){
+    	if(mediumUp) return 'U'; else if(mediumDown) return 'D'; else return 'Medium No Signal';
+    }
+   if($('#safe').is(':checked')){
+    	if(slowUp) return 'U'; else if(slowDown) return 'D'; else return 'Safe No Signal';
+    }
+}
+var marketD = function(spots,a){
+	spc[a] = spots;
+	ch1 = spc[a]       - spc[a - 30];
+	ch2 = spc[a -  31] - spc[a - 61];
+	ch3 = spc[a -  62] - spc[a - 122];
+	ch4 = spc[a - 123] - spc[a - 153];
+	ch5 = spc[a - 154] - spc[a - 184];
+	ch6 = spc[a - 185] - spc[a - 215];
+	ch7 = spc[a - 216] - spc[a - 246];
+	ch8 = spc[a - 247] - spc[a - 277];
+	ch9 = spc[a - 278] - spc[a - 328];
+    ch10= spc[a - 329] - spc[a - 359];
+    ch11= spc[a - 360] - spc[a - 390];
+    ch12= spc[a - 391] - spc[a - 421];
+    ch13= spc[a - 422] - spc[a - 452];
+    ch14= spc[a - 453] - spc[a - 483];
+    ch15= spc[a - 484] - spc[a - 514];
+    ch16= spc[a - 515] - spc[a - 545];
+   fastUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0;
+   fastDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0;
+   mediumUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0;
+   mediumDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0;
+   slowUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0 && ch13 > 0 && ch14 > 0;
+   slowDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0 && ch13 < 0 && ch14 < 0;
+    if($('#fast').is(':checked')){
+    	if(fastUp) return 'U'; else if(fastDown) return 'D'; else return 'Fast No Signal';
+    }
+   if($('#medium').is(':checked')){
+    	if(mediumUp) return 'U'; else if(mediumDown) return 'D'; else return 'Medium No Signal';
+    }
+   if($('#safe').is(':checked')){
+    	if(slowUp) return 'U'; else if(slowDown) return 'D'; else return 'Safe No Signal';
+    }
+}
+var marketE = function(spots,a){
+	spd[a] = spots;
+	ch1 = spd[a]       - spd[a - 30];
+	ch2 = spd[a -  31] - spd[a - 61];
+	ch3 = spd[a -  62] - spd[a - 122];
+	ch4 = spd[a - 123] - spd[a - 153];
+	ch5 = spd[a - 154] - spd[a - 184];
+	ch6 = spd[a - 185] - spd[a - 215];
+	ch7 = spd[a - 216] - spd[a - 246];
+	ch8 = spd[a - 247] - spd[a - 277];
+	ch9 = spd[a - 278] - spd[a - 328];
+    ch10= spd[a - 329] - spd[a - 359];
+    ch11= spd[a - 360] - spd[a - 390];
+    ch12= spd[a - 391] - spd[a - 421];
+    ch13= spd[a - 422] - spd[a - 452];
+    ch14= spd[a - 453] - spd[a - 483];
+    ch15= spd[a - 484] - spd[a - 514];
+    ch16= spd[a - 515] - spd[a - 545];
+   fastUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0;
+   fastDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0;
+   mediumUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0;
+   mediumDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0;
+   slowUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0 && ch13 > 0 && ch14 > 0;
+   slowDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0 && ch13 < 0 && ch14 < 0;
+    if($('#fast').is(':checked')){
+    	if(fastUp) return 'U'; else if(fastDown) return 'D'; else return 'Fast No Signal';
+    }
+   if($('#medium').is(':checked')){
+    	if(mediumUp) return 'U'; else if(mediumDown) return 'D'; else return 'Medium No Signal';
+    }
+   if($('#safe').is(':checked')){
+    	if(slowUp) return 'U'; else if(slowDown) return 'D'; else return 'Safe No Signal';
+    }
+}
+var marketF = function(spots,a){
+	spe[a] = spots;
+	ch1 = spe[a]       - spe[a - 30];
+	ch2 = spe[a -  31] - spe[a - 61];
+	ch3 = spe[a -  62] - spe[a - 122];
+	ch4 = spe[a - 123] - spe[a - 153];
+	ch5 = spe[a - 154] - spe[a - 184];
+	ch6 = spe[a - 185] - spe[a - 215];
+	ch7 = spe[a - 216] - spe[a - 246];
+	ch8 = spe[a - 247] - spe[a - 277];
+	ch9 = spe[a - 278] - spe[a - 328];
+    ch10= spe[a - 329] - spe[a - 359];
+    ch11= spe[a - 360] - spe[a - 390];
+    ch12= spe[a - 391] - spe[a - 421];
+    ch13= spe[a - 422] - spe[a - 452];
+    ch14= spe[a - 453] - spe[a - 483];
+    ch15= spe[a - 484] - spe[a - 514];
+    ch16= spe[a - 515] - spe[a - 545];
+   fastUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0;
+   fastDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0;
+   mediumUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0;
+   mediumDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0;
+   slowUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0 && ch13 > 0 && ch14 > 0;
+   slowDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0 && ch13 < 0 && ch14 < 0;
+    if($('#fast').is(':checked')){
+    	if(fastUp) return 'U'; else if(fastDown) return 'D'; else return 'Fast No Signal';
+    }
+   if($('#medium').is(':checked')){
+    	if(mediumUp) return 'U'; else if(mediumDown) return 'D'; else return 'Medium No Signal';
+    }
+   if($('#safe').is(':checked')){
+    	if(slowUp) return 'U'; else if(slowDown) return 'D'; else return 'Safe No Signal';
+    }
+}
+var marketG = function(spots,a){
+	spf[a] = spots;
+	ch1 = spf[a]       - spf[a - 30];
+	ch2 = spf[a -  31] - spf[a - 61];
+	ch3 = spf[a -  62] - spf[a - 122];
+	ch4 = spf[a - 123] - spf[a - 153];
+	ch5 = spf[a - 154] - spf[a - 184];
+	ch6 = spf[a - 185] - spf[a - 215];
+	ch7 = spf[a - 216] - spf[a - 246];
+	ch8 = spf[a - 247] - spf[a - 277];
+	ch9 = spf[a - 278] - spf[a - 328];
+    ch10= spf[a - 329] - spf[a - 359];
+    ch11= spf[a - 360] - spf[a - 390];
+    ch12= spf[a - 391] - spf[a - 421];
+    ch13= spf[a - 422] - spf[a - 452];
+    ch14= spf[a - 453] - spf[a - 483];
+    ch15= spf[a - 484] - spf[a - 514];
+    ch16= spf[a - 515] - spf[a - 545];
+   fastUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0;
+   fastDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0;
+   mediumUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0;
+   mediumDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0;
+   slowUp = ch1 > 0 && ch2 > 0 && ch3 > 0 && ch4 > 0 && ch5 > 0 && ch6 > 0 && ch7 > 0 && ch8 > 0 && ch9 > 0 && ch10 > 0 && ch11 > 0 && ch12 > 0 && ch13 > 0 && ch14 > 0;
+   slowDown = ch1 < 0 && ch2 < 0 && ch3 < 0 && ch4 < 0 && ch5 < 0 && ch6 < 0 && ch7 < 0 && ch8 < 0 && ch9 < 0 && ch10 < 0 && ch11 < 0 && ch12 < 0 && ch13 < 0 && ch14 < 0;
+    if($('#fast').is(':checked')){
+    	if(fastUp) return 'U'; else if(fastDown) return 'D'; else return 'Fast No Signal';
+    }
+   if($('#medium').is(':checked')){
+    	if(mediumUp) return 'U'; else if(mediumDown) return 'D'; else return 'Medium No Signal';
+    }
+   if($('#safe').is(':checked')){
+    	if(slowUp) return 'U'; else if(slowDown) return 'D'; else return 'Safe No Signal';
+    }
+}
+
+</script>
+</body>
+</html>
